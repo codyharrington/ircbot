@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -35,28 +36,15 @@ void error(char *msg) {
     exit(errno);
 }
 
+void send_raw(struct IRC_CONN *ctx, char *fmt, ...) {
+    char sbuf[IRC_MESSAGE_SIZE];
 
-void parse_buffer(char *buffer) {
-    int index = 0;    
-    char curr = buffer[index];
-    int msg_count = 0;
-    int msg_len = 1;
-
-    while (curr != '\0') {
-        if (curr == '\n') {
-            if (index > 0 && buffer[index - 1] == '\r') {
-                char msg_str[index + 1];
-                memset(msg_str, 0, index + 1);
-                strncpy(msg_str, buffer, msg_len);
-                msg_count++;
-                msg_len = 0;
-                puts(msg_str);
-            }
-        }
-        index++;
-        msg_len++;
-        curr = buffer[index];
-    }
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(sbuf, IRC_MESSAGE_SIZE, fmt, ap);
+    va_end(ap);
+    printf("<< %s", sbuf);
+    write(ctx->sockfd, sbuf, strlen(sbuf));
 }
 
 void listen_server(struct IRC_CONN *ctx) {
@@ -64,21 +52,22 @@ void listen_server(struct IRC_CONN *ctx) {
     char read_buf[IRC_MESSAGE_SIZE];
     connect(ctx->sockfd, ctx->servaddr.ai_addr,
             ctx->servaddr.ai_addrlen);
+    
+    send_raw(ctx, "USER %s 0 0 :%s\r\n", ctx->nick, ctx->nick);
+    send_raw(ctx, "NICK %s\r\n", ctx->nick);
 
     for (;;) {
         ret = read(ctx->sockfd, read_buf, IRC_MESSAGE_SIZE - 1); 
         switch (ret) {
             case -1:
                 error("Read error");
-                break;
             case 0:
                 printf("Finished reading");
                 exit(0);
-                break;
             default:
                 read_buf[ret - 1] = '\0';
-                parse_buffer(read_buf);
-                break;
+                puts(read_buf);
+                memset(read_buf, 0, ret);
         }
     }
 }
@@ -104,7 +93,7 @@ void init_context(struct IRC_CONN *ctx) {
     ctx->servaddr_str = "irc.rizon.net\0";
     ctx->channel = "#/g/spam";
     ctx->port = 6667;
-    ctx->nick = "chchjesus_bot\0";
+    ctx->nick = "chchjesus_bot_two\0";
 
     resolve_server(ctx);
 
@@ -126,7 +115,6 @@ int main() {
     signal(SIGINT, sigint_handler);
     signal(SIGPIPE, sigpipe_handler);
     struct IRC_CONN ctx;
-
     init_context(&ctx);
     listen_server(&ctx);
 
