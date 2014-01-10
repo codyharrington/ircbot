@@ -47,6 +47,20 @@ void send_raw(struct IRC_CONN *ctx, char *fmt, ...) {
     write(ctx->sockfd, sbuf, strlen(sbuf));
 }
 
+void parse_irc_buffer(char *read_buf) {
+    char *msg_end_ptr = NULL;
+
+    while ((msg_end_ptr = strstr(read_buf, "\r\n")) != NULL) {
+        int msg_len = (msg_end_ptr + 2) - read_buf;
+        char msg[msg_len];
+        strncpy(msg, read_buf, msg_len);
+        printf("%s", msg);
+        memset(msg, 0, msg_len);
+        read_buf += msg_len;
+    }
+    printf("%s\n", read_buf);
+}
+
 void listen_server(struct IRC_CONN *ctx) {
     ssize_t ret;
     char read_buf[IRC_MESSAGE_SIZE];
@@ -66,11 +80,13 @@ void listen_server(struct IRC_CONN *ctx) {
                 exit(0);
             default:
                 read_buf[ret - 1] = '\0';
-                puts(read_buf);
+                parse_irc_buffer(read_buf);
                 memset(read_buf, 0, ret);
         }
     }
 }
+
+
 
 void resolve_server(struct IRC_CONN *ctx) {
     struct addrinfo hints;
