@@ -79,13 +79,12 @@ void listen_server(struct IRC_CONN *ctx) {
                 printf("Finished reading");
                 exit(0);
             default:
-                read_buf[ret - 1] = '\0';
+                read_buf[ret] = '\0';
                 parse_irc_buffer(read_buf);
                 memset(read_buf, 0, ret);
         }
     }
 }
-
 
 
 void resolve_server(struct IRC_CONN *ctx) {
@@ -130,7 +129,9 @@ static void sigpipe_handler(int signo) {
 int main() {
     signal(SIGINT, sigint_handler);
     signal(SIGPIPE, sigpipe_handler);
+
     struct IRC_CONN ctx;
+
     init_context(&ctx);
     listen_server(&ctx);
 
