@@ -57,9 +57,9 @@ void parse_irc_buffer(char *read_buf) {
     int msg_len = 0;
 
     while ((msg_end_ptr = strstr(read_buf, "\r\n")) != NULL) {
-        msg_len = (msg_end_ptr + 2) - read_buf;
+        msg_len = (msg_end_ptr + 1) - read_buf;
         char msg[msg_len];
-        strncpy(msg, read_buf, msg_len);
+        memcpy(msg, read_buf, msg_len);
         printf("%s", msg);
         memset(msg, 0, msg_len);
         read_buf += msg_len;
@@ -81,6 +81,7 @@ void listen_server(struct IRC_CONN *ctx) {
         ret = read(ctx->sockfd, read_buf, IRC_MESSAGE_SIZE - 1); 
         switch (ret) {
             case -1:
+                close(ctx->sockfd);
                 error("Read error");
             case 0:
                 success("Finished reading.");
