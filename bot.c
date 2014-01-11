@@ -36,10 +36,15 @@ void error(char *msg) {
     exit(errno);
 }
 
-void send_raw(struct IRC_CONN *ctx, char *fmt, ...) {
-    char sbuf[IRC_MESSAGE_SIZE];
+void success(char *msg) {
+    printf("%s\n", msg);
+    exit(EXIT_SUCCESS);
+}
 
+void send_raw(struct IRC_CONN *ctx, char *fmt, ...) {
+    char sbuf[IRC_MESSAGE_SIZE] = {'\0'};
     va_list ap;
+
     va_start(ap, fmt);
     vsnprintf(sbuf, IRC_MESSAGE_SIZE, fmt, ap);
     va_end(ap);
@@ -49,20 +54,21 @@ void send_raw(struct IRC_CONN *ctx, char *fmt, ...) {
 
 void parse_irc_buffer(char *read_buf) {
     char *msg_end_ptr = NULL;
+    int msg_len = 0;
 
     while ((msg_end_ptr = strstr(read_buf, "\r\n")) != NULL) {
-        int msg_len = (msg_end_ptr + 2) - read_buf;
+        msg_len = (msg_end_ptr + 2) - read_buf;
         char msg[msg_len];
         strncpy(msg, read_buf, msg_len);
         printf("%s", msg);
         memset(msg, 0, msg_len);
         read_buf += msg_len;
     }
-    printf("%s\n", read_buf);
+    printf("%s", read_buf);
 }
 
 void listen_server(struct IRC_CONN *ctx) {
-    ssize_t ret;
+    ssize_t ret = 0;
     char read_buf[IRC_MESSAGE_SIZE];
     connect(ctx->sockfd, ctx->servaddr.ai_addr,
             ctx->servaddr.ai_addrlen);
@@ -71,17 +77,15 @@ void listen_server(struct IRC_CONN *ctx) {
     send_raw(ctx, "NICK %s\r\n", ctx->nick);
 
     for (;;) {
+        memset(read_buf, 0, IRC_MESSAGE_SIZE);
         ret = read(ctx->sockfd, read_buf, IRC_MESSAGE_SIZE - 1); 
         switch (ret) {
             case -1:
                 error("Read error");
             case 0:
-                printf("Finished reading");
-                exit(0);
+                success("Finished reading.");
             default:
-                read_buf[ret] = '\0';
                 parse_irc_buffer(read_buf);
-                memset(read_buf, 0, ret);
         }
     }
 }
@@ -90,7 +94,7 @@ void listen_server(struct IRC_CONN *ctx) {
 void resolve_server(struct IRC_CONN *ctx) {
     struct addrinfo hints;
     struct addrinfo *res;
-    char port_str[5];
+    char port_str[5] = {'\0'};
 
     sprintf(port_str, "%d", ctx->port);
 
