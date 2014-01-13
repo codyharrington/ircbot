@@ -43,7 +43,8 @@ void success(char *msg) {
     exit(EXIT_SUCCESS);
 }
 
-void send_raw(struct IRC_CONN *ctx, char *fmt, ...) {
+void write_to_socket(struct IRC_CONN *ctx, char *fmt, ...) {
+    ssize_t ret = 0;
     char sbuf[IRC_MESSAGE_SIZE] = {'\0'};
     va_list ap;
 
@@ -51,14 +52,23 @@ void send_raw(struct IRC_CONN *ctx, char *fmt, ...) {
     vsnprintf(sbuf, IRC_MESSAGE_SIZE, fmt, ap);
     va_end(ap);
     printf("<< %s", sbuf);
-    write(ctx->sockfd, sbuf, strlen(sbuf));
+
+    ret = write(ctx->sockfd, sbuf, strlen(sbuf));
+    switch (ret) {
+        case -1:
+            error("write");
+        case 0:
+            printf("wrote nothing");
+        default:
+            ;
+    }
 }
 
 /** 
  * Return the number of bytes left over as 
- * part of a message 
+ * part of a fragmented IRC message
  */
-size_t parse_irc_buffer(char *read_buf) {
+size_t parse_read_buffer(char *read_buf) {
     char *msg_end_ptr = NULL;
     char *read_buf_ptr = read_buf;
     size_t msg_len = 0;
@@ -85,8 +95,8 @@ void listen_server(struct IRC_CONN *ctx) {
     connect(ctx->sockfd, ctx->servaddr.ai_addr,
             ctx->servaddr.ai_addrlen);
     
-    send_raw(ctx, "USER %s 0 0 :%s\r\n", ctx->nick, ctx->nick);
-    send_raw(ctx, "NICK %s\r\n", ctx->nick);
+    write_to_socket(ctx, "USER %s 0 0 :%s\r\n", ctx->nick, ctx->nick);
+    write_to_socket(ctx, "NICK %s\r\n", ctx->nick);
 
     for (;;) {
         memset(read_buf + remainder, 0, IRC_MESSAGE_SIZE - remainder);
@@ -101,11 +111,10 @@ void listen_server(struct IRC_CONN *ctx) {
                 success("Finished reading.");
                 break;
             default:
-                remainder = parse_irc_buffer(read_buf);
+                remainder = parse_read_buffer(read_buf);
         }
     }
 }
-
 
 void resolve_server(struct IRC_CONN *ctx) {
     struct addrinfo hints;
