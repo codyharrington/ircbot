@@ -57,9 +57,11 @@ void parse_irc_buffer(char *read_buf) {
     int msg_len = 0;
 
     while ((msg_end_ptr = strstr(read_buf, "\r\n")) != NULL) {
-        msg_len = (msg_end_ptr + 1) - read_buf;
-        char msg[msg_len];
+        msg_len = (msg_end_ptr + 2) - read_buf;
+        char msg[msg_len + 1];
         memcpy(msg, read_buf, msg_len);
+        msg[msg_len] = '\0';
+
         printf("%s", msg);
         memset(msg, 0, msg_len);
         read_buf += msg_len;
