@@ -15,6 +15,7 @@
 #define STRING_BUFF_SIZE 16
 #define IRC_MESSAGE_SIZE 513
 #define MSG_QUEUE_LEN 128
+#define MSG_TERMINATOR "\r\n"
 
 struct IRC_CONN {
     struct addrinfo servaddr;
@@ -30,6 +31,7 @@ struct IRC_MSG {
     char *msg_body;
     int msg_len;
 };
+
 
 void error(char *msg) {
     perror(msg);
@@ -52,11 +54,16 @@ void send_raw(struct IRC_CONN *ctx, char *fmt, ...) {
     write(ctx->sockfd, sbuf, strlen(sbuf));
 }
 
-void parse_irc_buffer(char *read_buf) {
+/** 
+ * Return the number of bytes left over as 
+ * part of a message 
+ */
+size_t parse_irc_buffer(char *read_buf) {
     char *msg_end_ptr = NULL;
-    int msg_len = 0;
+    char *read_buf_ptr = read_buf;
+    size_t msg_len = 0;
 
-    while ((msg_end_ptr = strstr(read_buf, "\r\n")) != NULL) {
+    while ((msg_end_ptr = strstr(read_buf, MSG_TERMINATOR)) != NULL) {
         msg_len = (msg_end_ptr + 2) - read_buf;
         char msg[msg_len + 1];
         memcpy(msg, read_buf, msg_len);
@@ -66,11 +73,14 @@ void parse_irc_buffer(char *read_buf) {
         memset(msg, 0, msg_len);
         read_buf += msg_len;
     }
-    printf("%s", read_buf);
+    msg_len = strlen(read_buf);
+    memmove(read_buf_ptr, read_buf, msg_len);
+    return msg_len;
 }
 
 void listen_server(struct IRC_CONN *ctx) {
     ssize_t ret = 0;
+    size_t remainder = 0;
     char read_buf[IRC_MESSAGE_SIZE];
     connect(ctx->sockfd, ctx->servaddr.ai_addr,
             ctx->servaddr.ai_addrlen);
@@ -79,16 +89,19 @@ void listen_server(struct IRC_CONN *ctx) {
     send_raw(ctx, "NICK %s\r\n", ctx->nick);
 
     for (;;) {
-        memset(read_buf, 0, IRC_MESSAGE_SIZE);
-        ret = read(ctx->sockfd, read_buf, IRC_MESSAGE_SIZE - 1); 
+        memset(read_buf + remainder, 0, IRC_MESSAGE_SIZE - remainder);
+        ret = read(ctx->sockfd, read_buf + remainder,
+                (IRC_MESSAGE_SIZE - 1) - remainder); 
         switch (ret) {
             case -1:
                 close(ctx->sockfd);
                 error("Read error");
+                break;
             case 0:
                 success("Finished reading.");
+                break;
             default:
-                parse_irc_buffer(read_buf);
+                remainder = parse_irc_buffer(read_buf);
         }
     }
 }
@@ -102,9 +115,11 @@ void resolve_server(struct IRC_CONN *ctx) {
     sprintf(port_str, "%d", ctx->port);
 
     memset(&hints, 0, sizeof(hints));
+    memset(&res, 0, sizeof(res));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-
+    
+    /* Need to use freeaddrinfo() here to free the memory */
     getaddrinfo(ctx->servaddr_str, port_str, &hints, &res);
     ctx->servaddr = *res;
 }
