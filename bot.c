@@ -64,6 +64,10 @@ void write_to_socket(struct IRC_CONN *ctx, char *fmt, ...) {
     }
 }
 
+void parse_irc_message(char *msg, size_t msg_len) {
+    printf("%s", msg);
+}
+
 /** 
  * Return the number of bytes left over as 
  * part of a fragmented IRC message
@@ -75,11 +79,12 @@ size_t parse_read_buffer(char *read_buf) {
 
     while ((msg_end_ptr = strstr(read_buf, MSG_TERMINATOR)) != NULL) {
         msg_len = (msg_end_ptr + 2) - read_buf;
+
         char msg[msg_len + 1];
         memcpy(msg, read_buf, msg_len);
         msg[msg_len] = '\0';
+        parse_irc_message(msg, msg_len + 1);
 
-        printf("%s", msg);
         memset(msg, 0, msg_len);
         read_buf += msg_len;
     }
