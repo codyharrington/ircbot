@@ -17,7 +17,7 @@
 #define MSG_QUEUE_LEN 128
 #define MSG_TERMINATOR "\r\n"
 
-struct IRC_CONN {
+struct IRC_CTX {
     struct addrinfo servaddr;
     char *servaddr_str;
     char *channel; 
@@ -27,11 +27,12 @@ struct IRC_CONN {
 };
 
 struct IRC_MSG {
-    char *msg_type;
-    char *msg_body;
+    char *header;
+    char *command;
+    char **parameters;
+    char *message;
     int msg_len;
 };
-
 
 void error(char *msg) {
     perror(msg);
@@ -43,7 +44,7 @@ void success(char *msg) {
     exit(EXIT_SUCCESS);
 }
 
-void write_to_socket(struct IRC_CONN *ctx, char *fmt, ...) {
+void write_to_socket(struct IRC_CTX *ctx, char *fmt, ...) {
     ssize_t ret = 0;
     char sbuf[IRC_MESSAGE_SIZE] = {'\0'};
     va_list ap;
@@ -65,7 +66,12 @@ void write_to_socket(struct IRC_CONN *ctx, char *fmt, ...) {
 }
 
 void parse_irc_message(char *msg, size_t msg_len) {
-    printf("%s", msg);
+    char *end_msg_ptr = NULL;
+    int index = 0;
+
+    if ((end_msg_ptr = strstr(msg, " :")) != NULL) {
+        printf("%s", end_msg_ptr + 2);
+    }
 }
 
 /** 
@@ -83,7 +89,7 @@ size_t parse_read_buffer(char *read_buf) {
         char msg[msg_len + 1];
         memcpy(msg, read_buf, msg_len);
         msg[msg_len] = '\0';
-        parse_irc_message(msg, msg_len + 1);
+        parse_irc_message(msg, msg_len);
 
         memset(msg, 0, msg_len);
         read_buf += msg_len;
@@ -93,7 +99,7 @@ size_t parse_read_buffer(char *read_buf) {
     return msg_len;
 }
 
-void listen_server(struct IRC_CONN *ctx) {
+void listen_server(struct IRC_CTX *ctx) {
     ssize_t ret = 0;
     size_t remainder = 0;
     char read_buf[IRC_MESSAGE_SIZE];
@@ -121,7 +127,7 @@ void listen_server(struct IRC_CONN *ctx) {
     }
 }
 
-void resolve_server(struct IRC_CONN *ctx) {
+void resolve_server(struct IRC_CTX *ctx) {
     struct addrinfo hints;
     struct addrinfo *res;
     char port_str[5] = {'\0'};
@@ -138,7 +144,7 @@ void resolve_server(struct IRC_CONN *ctx) {
     ctx->servaddr = *res;
 }
 
-void init_context(struct IRC_CONN *ctx) {
+void init_context(struct IRC_CTX *ctx) {
     memset(&(ctx->servaddr), 0, sizeof(ctx->servaddr));
 
     ctx->servaddr_str = "irc.rizon.net\0";
@@ -166,7 +172,7 @@ int main() {
     signal(SIGINT, sigint_handler);
     signal(SIGPIPE, sigpipe_handler);
 
-    struct IRC_CONN ctx;
+    struct IRC_CTX ctx;
 
     init_context(&ctx);
     listen_server(&ctx);
