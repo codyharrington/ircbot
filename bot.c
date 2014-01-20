@@ -87,11 +87,16 @@ void write_to_socket(struct IRC_CTX *ctx, char *fmt, ...) {
     }
 }
 
-void parse_irc_message(char *msg, size_t msg_len) {
-    char *end_msg_ptr = NULL;
-    int index = 0;
+void parse_irc_message(char *msg, size_t msg_len) {   
+    char *msg_body_ptr = NULL;
+    int msg_body_len = 0;
 
-    printf("%s", msg);
+    if (msg[0] == ':') {
+        msg_body_ptr = strstr(msg, " :");
+        printf("%s", msg_body_ptr);
+    } else {
+        printf("%s", msg);
+    }
 }
 
 void parse_read_buffer(char *read_buf, size_t *remainder) {
@@ -101,10 +106,10 @@ void parse_read_buffer(char *read_buf, size_t *remainder) {
 
     while ((msg_end_ptr = strstr(read_buf, MSG_TERMINATOR)) != NULL) {
         msg_len = (msg_end_ptr + MSG_TERMINATOR_LEN) - read_buf;
-
         char msg[msg_len + 1];
         memcpy(msg, read_buf, msg_len);
         msg[msg_len] = '\0';
+
         parse_irc_message(msg, msg_len);
 
         memset(msg, 0, msg_len);
@@ -122,8 +127,7 @@ void listen_server(struct IRC_CTX *ctx) {
     
     for (;;) {
         memset(read_buf + remainder, 0, IRC_MESSAGE_SIZE - remainder);
-        ret = read(ctx->sockfd, read_buf + remainder,
-                (IRC_MESSAGE_SIZE - 1) - remainder); 
+        ret = read(ctx->sockfd, read_buf + remainder, (IRC_MESSAGE_SIZE - 1) - remainder); 
         switch (ret) {
             case -1:
                 close(ctx->sockfd);
@@ -157,8 +161,7 @@ void init_connection(struct IRC_CTX *ctx) {
 
     memcpy(&(ctx->servaddr), res->ai_addr, res->ai_addrlen);
     ctx->servaddr_len = res->ai_addrlen;
-    ctx->sockfd = socket(res->ai_family, res->ai_socktype,
-            res->ai_protocol);
+    ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (ctx->sockfd < 0) {
         error("socket");
     }
