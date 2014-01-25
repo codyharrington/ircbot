@@ -8,11 +8,14 @@ EXECUTABLE=bot
 CFLAGS=-std=${STD} ${WARNFLAGS} ${DEBUGFLAGS} 
 LDFLAGS= ${DEBUGFLAGS} ${LIBS}
 
-all: bot.o
-	${CC} ${DEBUGFLAGS} -o ${EXECUTABLE} bot.o
+all: utils.o bot.o
+	${CC} ${DEBUGFLAGS} -o ${EXECUTABLE} utils.o bot.o
 
-bot.o: bot.c bot.h
-	${CC} ${CFLAGS} -c bot.c bot.h
+bot.o: bot.c bot.h 
+	${CC} ${CFLAGS} -c bot.c bot.h 
+
+utils.o: utils.c utils.h
+	${CC} ${CFLAGS} -c utils.c utils.h
 
 clean: 
 	rm *.o *.gch

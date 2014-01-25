@@ -33,5 +33,6 @@ struct IRC_MSG {
 extern struct IRC_CTX *ctx;
 extern struct IRC_MSG *message_queue;
 
+void free_context();
 
 #endif /* bot.h */

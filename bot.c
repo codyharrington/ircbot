@@ -6,12 +6,12 @@
 #include <unistd.h>
 #include <errno.h>
 #include "bot.h"
+#include "utils.h"
 
 #define IRC_NICK "chchjesus_bot_two"
 #define IRC_SERVER "irc.rizon.net"
 #define IRC_CHANNEL "#/g/spam"
 #define IRC_PORT 6667
-
 
 
 struct IRC_CTX *ctx;
@@ -23,32 +23,10 @@ void free_context() {
     free(ctx);
 }
 
-void free_message(struct IRC_MSG *msg, size_t msg_len) {   
+void free_message(struct IRC_MSG *msg) {   
     for (size_t idx; idx < msg->msg_len; idx++) {
         free(msg->message[idx]);
     }
-}
-
-void error(char *msg) {
-    perror(msg);
-    free_context();
-    free(message_queue);
-    exit(errno);
-}
-
-void success(char *msg) {
-    printf("%s\n", msg);
-    free_context();
-    free(message_queue);
-    exit(EXIT_SUCCESS);
-}
-
-static void sigint_handler(int signo) {
-    error("sigint");
-}
-
-static void sigpipe_handler(int signo) {
-    error("sigpipe");
 }
 
 void write_to_socket(struct IRC_CTX *ctx, char *fmt, ...) {
