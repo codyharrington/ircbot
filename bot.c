@@ -1,46 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <signal.h>
 #include <string.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
-
-#define IRC_MESSAGE_SIZE 513
-#define PORT_STR_LEN 5
-#define MSG_QUEUE_LEN 128
-#define IRC_MSG_TERMINATOR "\r\n"
-#define IRC_MSG_TERMINATOR_LEN 2
+#include "bot.h"
 
 #define IRC_NICK "chchjesus_bot_two"
 #define IRC_SERVER "irc.rizon.net"
 #define IRC_CHANNEL "#/g/spam"
 #define IRC_PORT 6667
 
-#define IRC_HEADER 0
-#define IRC_COMMAND 1
-#define IRC_PARAMETER_OFFSET 2
-#define IRC_FIELD_SEP ' '
-#define IRC_PAYLOAD_SEP " :"
 
-struct IRC_CTX {
-    struct sockaddr servaddr;
-    socklen_t servaddr_len;
-    char *servaddr_str;
-    char *channel; 
-    char *nick;
-    int sockfd;
-    int port;
-};
-
-struct IRC_MSG {
-    char **message;
-    size_t msg_len;
-};
 
 struct IRC_CTX *ctx;
 struct IRC_MSG *message_queue;
