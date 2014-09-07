@@ -153,7 +153,10 @@ int listen_server(struct IRC_CTX *ctx) {
 				goto cleanup;
 			default:
 				parse_read_buffer(ctx, read_buf, &offset);
-				display_message(ctx);
+				if (!strcmp(ctx->msg->command, "PING"))
+					write_to_socket(ctx, "PONG\r\n");
+				else
+					display_message(ctx);
 				break;
 		}
 	}
