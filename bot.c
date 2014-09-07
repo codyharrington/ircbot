@@ -29,7 +29,6 @@ void free_context(struct IRC_CTX *ctx) {
 	if (ctx->sockfd && ctx->sockfd >= 0)
 		close(ctx->sockfd);
 	free_message(ctx->msg);
-	sem_destroy(&ctx->msg_mutex);
 	free(ctx);
 }
 
@@ -50,6 +49,10 @@ void write_to_socket(struct IRC_CTX *ctx, char *fmt, ...) {
 			printf("wrote nothing");
 		default: ;
 	}
+}
+
+void display_message(struct IRC_CTX *ctx) {
+	fprintf(stdout, "%s: %s", ctx->msg->src->nick, ctx->msg->message);
 }
 
 struct IRC_SRC *parse_irc_msg_src(char *raw) {
@@ -107,7 +110,6 @@ void parse_irc_message(struct IRC_MSG *msg) {
 	while (*raw_msg_ptr != ' ')
 		raw_msg_ptr++;
 	*raw_msg_ptr = '\0';
-	printf("%s", msg->_raw);
 }
 
 void parse_read_buffer(struct IRC_CTX *ctx, char *read_buf, size_t *remainder) {
@@ -121,9 +123,9 @@ void parse_read_buffer(struct IRC_CTX *ctx, char *read_buf, size_t *remainder) {
 		ctx_msg->_raw = calloc(msg_len + 1, sizeof(char));
 		memcpy(ctx_msg->_raw, read_buf, msg_len);
 		parse_irc_message(ctx_msg);
-		sem_wait(&ctx->msg_mutex);
+		
 		NEXT_MSG(ctx_msg)
-		sem_post(&ctx->msg_mutex);
+		
 		read_buf += msg_len;
 	}
 	*remainder = strlen(read_buf);
@@ -131,13 +133,11 @@ void parse_read_buffer(struct IRC_CTX *ctx, char *read_buf, size_t *remainder) {
 }
 
 
-void *listen_server(void *args) {
+int listen_server(struct IRC_CTX *ctx) {
 	ssize_t ret = 0;
 	size_t offset = 0;
 	char read_buf[READ_BUF_SIZE_BYTES];
-	struct THREAD_ARGS *thread_args = (struct THREAD_ARGS *) args;
-	struct IRC_CTX *ctx = thread_args->ctx;
-	int *return_value = thread_args->return_value;
+	int return_value = 0;
 	
 	for (;;) {
 		memset(read_buf + offset, 0, READ_BUF_SIZE_BYTES - offset);
@@ -153,14 +153,15 @@ void *listen_server(void *args) {
 				goto cleanup;
 			default:
 				parse_read_buffer(ctx, read_buf, &offset);
+				display_message(ctx);
 				break;
 		}
 	}
 	
 cleanup:
 	free_context(ctx);
-	*return_value =  ret ? errno : ret;
-	pthread_exit(return_value);
+	return_value =  ret ? errno : ret;
+	return return_value;
 }
 
 void init_connection(struct IRC_CTX *ctx) {
@@ -204,15 +205,12 @@ void init_context(struct IRC_CTX *ctx) {
 	ctx->port = IRC_PORT;
 	ctx->nick = IRC_NICK;
 	ctx->msg = (struct IRC_MSG *) malloc(sizeof(struct IRC_MSG));
-	sem_init(&ctx->msg_mutex, 0, 1);
 }
 
 
 int main() {
 	signal(SIGINT, sigint_handler);
 	signal(SIGPIPE, sigpipe_handler);
-	pthread_t ctx_listen_thread;
-	struct THREAD_ARGS thread_args = {NULL, NULL};
 	int exit_status = 0;
 	
 	struct IRC_CTX *ctx = (struct IRC_CTX *) malloc(sizeof(struct IRC_CTX));
@@ -220,10 +218,7 @@ int main() {
 	init_context(ctx);
 	init_connection(ctx);
 	
-	thread_args.ctx = ctx;
-	thread_args.return_value = &exit_status;
+	exit_status = listen_server(ctx);
 	
-	pthread_create(&ctx_listen_thread, NULL, &listen_server, (void *) &thread_args);
-
 	return exit_status;
 }
