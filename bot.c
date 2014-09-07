@@ -54,19 +54,19 @@ void write_to_socket(struct IRC_CTX *ctx, char *fmt, ...) {
 }
 
 struct IRC_SRC *parse_irc_msg_src(char *raw) {
-	struct IRC_SRC src = (struct IRC_SRC *) malloc(sizeof(struct IRC_SRC));
-	src.nick = raw;
+	struct IRC_SRC *src = (struct IRC_SRC *) malloc(sizeof(struct IRC_SRC));
+	src->nick = raw;
 	while (*raw != '!') 
 		raw++;
 	*raw = '\0';
 	raw++;
 	if (*raw == '~')
 		raw++;
-	src.user = raw;
+	src->user = raw;
 	while (*raw != '@')
 		raw++;
 	*raw = '\0';
-	src.host = raw + 1;
+	src->host = raw + 1;
 	return src;
 }
 
@@ -136,11 +136,11 @@ void listen_server(void **args) {
 	ssize_t ret = 0;
 	size_t offset = 0;
 	char read_buf[READ_BUF_SIZE_BYTES];
-	struct IRC_CTX ctx = args[0];
+	struct IRC_CTX *ctx = args[0];
 	int *return_value = args[1];
 	
 	for (;;) {
-		memset(read_buf + remainder, 0, READ_BUF_SIZE_BYTES - remainder);
+		memset(read_buf + offset, 0, READ_BUF_SIZE_BYTES - offset);
 		ret = read(ctx->sockfd, read_buf + offset, 
 				(READ_BUF_SIZE_BYTES - 1) - offset); 
 		switch (ret) {
@@ -195,7 +195,7 @@ void init_connection(struct IRC_CTX *ctx) {
 	write_to_socket(ctx, "NICK %s\r\n", ctx->nick);
 }
 
-void init_context() {
+void init_context(struct IRC_CTX *ctx) {
 	ctx = calloc(1, sizeof(struct IRC_CTX));
 	memset(&(ctx->servaddr), 0, sizeof(ctx->servaddr));
 	ctx->servaddr_str = IRC_SERVER;
@@ -223,7 +223,6 @@ int main() {
 	thread_args[1] = &exit_status;
 	
 	pthread_create(&ctx_listen_thread, NULL, &listen_server, &thread_args);
-
 
 	return exit_status;
 }

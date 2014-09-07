@@ -1,8 +1,8 @@
 CC=gcc
 STD=gnu99
-WARNFLAGS=-Wall -Wextra -pedantic
+WARNFLAGS=-w
 DEBUGFLAGS=-g
-LIBS=-lm
+LIBS=-lm -pthread
 EXECUTABLE=bot
 
 CFLAGS=-std=${STD} ${WARNFLAGS} ${DEBUGFLAGS}

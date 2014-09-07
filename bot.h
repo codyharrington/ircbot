@@ -17,7 +17,7 @@
 #define IRC_MSG_HEADER_BOUND ":"
 
 #define NEXT_MSG(msg) \
-	msg->next = (struct IRC_MSG *) malloc(sizeof(IRC_MSG)); \
+	msg->next = (struct IRC_MSG *) malloc(sizeof(struct IRC_MSG)); \
 	msg->next->prev = msg; \
 	msg->next->next = NULL; \
 	if (msg->prev != NULL) { \
