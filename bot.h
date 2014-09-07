@@ -10,18 +10,9 @@
 #define READ_BUF_SIZE_BYTES 1024
 #define WRITE_BUF_SIZE_BYTES 1024
 
-#define NEXT_MSG(msg) \
-	msg->next = (struct IRC_MSG *) malloc(sizeof(struct IRC_MSG)); \
-	msg->next->prev = msg; \
-	msg->next->next = NULL; \
-	if (msg->prev != NULL) { \
-		free(msg->prev); \
-		msg->prev = NULL; \
-	} \
-	msg = msg->next; 
-
-#define PREV_MSG(msg) \
-	msg = msg->prev;
+#define JUMP_TO_SPACE(str) \
+	while (*str != ' ') \
+		str++;
 
 #define NULLIFY_SPACES(str) \
 	while (*str == ' ') { \
@@ -54,14 +45,6 @@ struct IRC_MSG {
 	char *command;
 	char **args;
 	char *message;
-	// Linked list up in here
-	struct IRC_MSG *next;
-	struct IRC_MSG *prev;
-};
-
-struct THREAD_ARGS {
-	struct IRC_CTX *ctx;
-	int *return_value;
 };
 
 extern struct IRC_CTX *ctx;
