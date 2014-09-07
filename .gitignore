@@ -1,4 +1,8 @@
-*.swp
+*.*swp
 bot
 *.o
 *.gch
+mcef*
+possible_name
+*.kde*
+tags

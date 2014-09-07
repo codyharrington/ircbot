@@ -2,36 +2,70 @@
 #define BOT_H
 
 #include <netdb.h>
+#include <semaphore.h>
 
 #define IRC_MESSAGE_SIZE 513
 #define PORT_STR_LEN 5
-#define MSG_QUEUE_LEN 128
 #define IRC_MSG_TERMINATOR "\r\n"
-#define IRC_MSG_TERMINATOR_LEN 2
+#define READ_BUF_SIZE_BYTES 1024
+#define WRITE_BUF_SIZE_BYTES 1024
 
 #define IRC_HEADER 0
 #define IRC_COMMAND 1
 #define IRC_PARAMETER_OFFSET 2
 #define IRC_FIELD_SEP ' '
-#define IRC_PAYLOAD_SEP " :"
+#define IRC_MSG_HEADER_BOUND ":"
+
+#define NEXT_MSG(msg) \
+	msg->next = (struct IRC_MSG *) malloc(sizeof(IRC_MSG)); \
+	msg->next->prev = msg; \
+	msg->next->next = NULL; \
+	if (msg->prev != NULL) { \
+		free(msg->prev); \
+		msg->prev = NULL; \
+	} \
+	msg = msg->next; 
+
+#define PREV_MSG(msg) \
+	msg = msg->prev;
+
+#define NULLIFY_SPACES(str) \
+	while (*str == ' ') { \
+		*str = '\0'; \
+		str++; \
+	} \
+
 
 struct IRC_CTX {
-    struct sockaddr servaddr;
-    socklen_t servaddr_len;
-    char *servaddr_str;
-    char *channel; 
-    char *nick;
-    int sockfd;
-    int port;
+	struct sockaddr servaddr;
+	socklen_t servaddr_len;
+	char *servaddr_str;
+	char *channel; 
+	char *nick;
+	int sockfd;
+	int port;
+	struct IRC_MSG *msg;
+	sem_t msg_mutex;
+};
+
+struct IRC_SRC {
+	char *nick;
+	char *user;
+	char *host;
 };
 
 struct IRC_MSG {
-    char **message;
-    size_t msg_len;
+	char *_raw;
+	struct IRC_SRC *src;
+	char *command;
+	char **args;
+	char *message;
+	// Linked list up in here
+	struct IRC_MSG *next;
+	struct IRC_MSG *prev;
 };
 
 extern struct IRC_CTX *ctx;
-extern struct IRC_MSG *message_queue;
 
 void free_context();
 
