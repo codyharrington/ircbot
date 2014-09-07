@@ -10,12 +10,6 @@
 #define READ_BUF_SIZE_BYTES 1024
 #define WRITE_BUF_SIZE_BYTES 1024
 
-#define IRC_HEADER 0
-#define IRC_COMMAND 1
-#define IRC_PARAMETER_OFFSET 2
-#define IRC_FIELD_SEP ' '
-#define IRC_MSG_HEADER_BOUND ":"
-
 #define NEXT_MSG(msg) \
 	msg->next = (struct IRC_MSG *) malloc(sizeof(struct IRC_MSG)); \
 	msg->next->prev = msg; \
@@ -63,6 +57,11 @@ struct IRC_MSG {
 	// Linked list up in here
 	struct IRC_MSG *next;
 	struct IRC_MSG *prev;
+};
+
+struct THREAD_ARGS {
+	struct IRC_CTX *ctx;
+	int *return_value;
 };
 
 extern struct IRC_CTX *ctx;

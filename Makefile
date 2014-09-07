@@ -1,6 +1,6 @@
 CC=gcc
 STD=gnu99
-WARNFLAGS=-w
+WARNFLAGS=-Wall -Wextra -pedantic
 DEBUGFLAGS=-g
 LIBS=-lm -pthread
 EXECUTABLE=bot
