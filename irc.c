@@ -128,7 +128,7 @@ void parse_params(int *argc, char **argv, char *ptr) {
     
    argv = (char **) calloc (*argc, sizeof(char *));
    
-   for (; idx > 0 && idx < *argc; idx++) {
+   for (; *argc > 0 && idx < *argc; idx++) {
        argv[idx] = ptr;
        jump_to_char(ptr, ' ');
        *ptr = '\0';
