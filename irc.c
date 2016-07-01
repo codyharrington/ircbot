@@ -59,10 +59,10 @@ struct IRC_MSG *create_message(char *raw, size_t raw_len) {
         parse_text(msg->text, raw_msg);
     }
     
-    if (!msg_is_valid(msg)) {
-        free_msg(msg);
-        return NULL;
-    }
+//     if (!msg_is_valid(msg)) {
+//         free_msg(msg);
+//         return NULL;
+//     }
     
     return msg;
     /* TODO: Check message for mandatory fields. If they do not exist,

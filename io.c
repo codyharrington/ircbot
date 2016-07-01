@@ -12,7 +12,8 @@
 
 
 void display_message(struct IRC_CTX *ctx) {
-	fprintf(stdout, "%s %s", ctx->msg->src->host, ctx->msg->text);
+// 	fprintf(stdout, "%s %s", ctx->msg->src->host, ctx->msg->text);
+    debug_print_msg(ctx->msg);
 }
 
 

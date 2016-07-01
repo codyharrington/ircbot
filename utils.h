@@ -3,6 +3,8 @@
 
 void nullify_chars(char *string_ptr, char c);
 
+void debug_print_msg(struct IRC_MSG *msg);
+
 void nullify_next_char_instance(char *string_ptr, char c);
 
 void jump_to_char(char *string_ptr, char c);
