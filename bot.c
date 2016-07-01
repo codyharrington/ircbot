@@ -12,9 +12,9 @@
 #include "io.h"
 
 #define IRC_NICK "chchjesus_bot_two"
-#define IRC_SERVER "localhost"
+#define IRC_SERVER "irc.rizon.net"
 #define IRC_CHANNEL "#/g/spam"
-#define IRC_PORT 12345
+#define IRC_PORT 6667
 
 
 void free_context(struct IRC_CTX *ctx) {
