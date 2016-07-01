@@ -1,5 +1,9 @@
+#include "bot.h"
+
 #ifndef IO_H
 #define IO_H
+
+#define WRITE_BUF_SIZE_BYTES 1024
 
 void display_message(struct IRC_CTX *ctx);
 

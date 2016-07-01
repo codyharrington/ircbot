@@ -1,9 +1,12 @@
 #include <stdio.h>
+#include "bot.h"
 
 #ifndef IRC_H
 #define IRC_H
 
-#define IRC_MESSAGE_SIZE 512
+#define IRC_MESSAGE_SIZE 513
+#define IRC_MSG_TERMINATOR "\r\n"
+#define READ_BUF_SIZE_BYTES 1024
 
 struct IRC_SRC {
 	char *server_name;
@@ -28,13 +31,15 @@ void free_msg(struct IRC_MSG *msg);
 
 struct IRC_MSG *create_message(char *raw, size_t raw_len);
 
+int msg_is_valid(struct IRC_MSG *msg);
+
 void handle_irc_command(struct IRC_CTX *ctx);
 
 void parse_src(struct IRC_SRC *src, char *ptr);
 
 void parse_command(char *command, char *ptr);
 
-void parse_params(int *argc, char **argv, char *message, char *ptr);
+void parse_params(int *argc, char **argv, char *ptr);
 
 void parse_text(char *text, char *ptr);
 

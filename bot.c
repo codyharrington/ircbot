@@ -12,15 +12,15 @@
 #include "io.h"
 
 #define IRC_NICK "chchjesus_bot_two"
-#define IRC_SERVER "irc.rizon.net"
+#define IRC_SERVER "localhost"
 #define IRC_CHANNEL "#/g/spam"
-#define IRC_PORT 6667
+#define IRC_PORT 12345
 
 
 void free_context(struct IRC_CTX *ctx) {
 	if (ctx->sockfd && ctx->sockfd >= 0)
 		close(ctx->sockfd);
-	free_message(ctx->msg);
+	free_msg(ctx->msg);
 	free(ctx);
 }
 

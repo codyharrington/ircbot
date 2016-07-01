@@ -30,7 +30,7 @@ void jump_to_char(char *string_ptr, char c) {
 }
 
 void jump_to_next_unique_char(char *string_ptr, char c) {
-    while (*string_ptr != '\0' && string_ptr == c)
+    while (*string_ptr != '\0' && *string_ptr == c)
 	string_ptr++;
 }
 
