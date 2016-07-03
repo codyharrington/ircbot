@@ -41,11 +41,13 @@ int listen_server(struct IRC_CTX *ctx) {
 	size_t offset = 0;
 	char read_buf[READ_BUF_SIZE_BYTES];
 	int return_value = 0;
+	int checked_valid = 0;
 	
 	for (;;) {
 		memset(read_buf + offset, 0, READ_BUF_SIZE_BYTES - offset);
 		ret = read(ctx->sockfd, read_buf + offset, 
 				(READ_BUF_SIZE_BYTES - 1) - offset); 
+		checked_valid = 0;
 		switch (ret) {
 			case -1:
 				close(ctx->sockfd);
@@ -57,7 +59,13 @@ int listen_server(struct IRC_CTX *ctx) {
 				goto cleanup;
 				break;
 			default:
-				parse_read_buffer(ctx, read_buf, &offset);
+				while (!checked_valid) {
+				    parse_read_buffer(ctx, read_buf, &offset);
+				    if (!ctx->msg->valid) 
+					free_msg(ctx->msg);
+				    else
+					checked_valid = 1;
+				}
 				handle_irc_command(ctx);
 				display_message(ctx);
 				break;

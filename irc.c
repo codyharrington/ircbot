@@ -21,6 +21,7 @@ struct IRC_MSG *init_msg()  {
     msg->argc = 0;
     msg->argv = NULL;
     msg->text = NULL;
+    msg->valid = 0;
     return msg;
 }
 
@@ -35,38 +36,36 @@ void free_msg(struct IRC_MSG *msg) {
 struct IRC_MSG *create_message(char *raw, size_t raw_len) {
     struct IRC_MSG *msg = init_msg();
     msg->_raw = calloc(raw_len + 1, sizeof(char));
-    char *raw_msg = NULL;
+    char *raw_msg_ptr = NULL;
+    char *delim_match = NULL;
     
     memcpy(msg->_raw, raw, raw_len);
     msg->_raw_len = raw_len;
     
-    raw_msg = msg->_raw;
+    raw_msg_ptr = msg->_raw;
     
-    if (*raw_msg == ':') {
-	raw_msg++;
-	parse_src(msg->src, raw_msg);
+    delim_match = strpbrk(raw_msg_ptr, ": ");
+    if (delim_match != NULL && *delim_match == ':') {
+	raw_msg_ptr = parse_src(msg, ++raw_msg_ptr);
     }
     
-    parse_command(msg->command, raw_msg);
-    
-    if (strchr(raw_msg, ' ') != NULL) {
-	jump_to_char(raw_msg, ' ');
-	parse_params(&(msg->argc), msg->argv, raw_msg);
+    delim_match = strpbrk(raw_msg_ptr, " :");
+    if (delim_match != NULL && *delim_match == ' ') {
+	raw_msg_ptr = parse_command(msg, raw_msg_ptr);
+    }
+    delim_match = strpbrk(raw_msg_ptr, " :");
+    if (delim_match != NULL && *delim_match == ' ') {
+	raw_msg_ptr = parse_params(msg, raw_msg_ptr);
+    }
+    delim_match = strpbrk(raw_msg_ptr, ":\r\n");
+    if (delim_match != NULL && *delim_match == ':') {
+       raw_msg_ptr = parse_text(msg, ++raw_msg_ptr);
     }
     
-    if (strchr(raw_msg, ':') != NULL) {
-        jump_to_char(raw_msg, ':');
-        parse_text(msg->text, raw_msg);
-    }
-    
-//     if (!msg_is_valid(msg)) {
-//         free_msg(msg);
-//         return NULL;
-//     }
+    /* If the message is deemed invalid, we will discard it later */
+    msg->valid = msg_is_valid(msg);
     
     return msg;
-    /* TODO: Check message for mandatory fields. If they do not exist,
-     * discard it */
     
 }
 
@@ -83,61 +82,46 @@ void handle_irc_command(struct IRC_CTX *ctx) {
 		write_to_socket(ctx, "PONG :%s\r\n", ctx->msg->src->host);
 }
 
-void parse_src(struct IRC_SRC *src, char *ptr) {
-    /* If there is no ! indicating the user section, then it is a 
-     * server name */
-    if (strchr(ptr, '!') == NULL) {
-	src->server_name = ptr;
-	return;
+char *parse_src(struct IRC_MSG *msg, char *raw_msg_ptr) {
+    if (*strpbrk(raw_msg_ptr, "! ") != '!') {
+	msg->src->server_name = strsep(&raw_msg_ptr, " ");
+	return raw_msg_ptr;
     } else {
-	src->nick = ptr;
-	
-	jump_to_char(ptr, '!');
-	*ptr = '\0';
-	ptr++;
-	
-	src->user = ptr;
+	msg->src->nick = strsep(&raw_msg_ptr, "!");
     }
     /* The @ character signifies the start of the host section */
-    if (strchr(ptr, '@') == NULL) {
-	return;
-    } else {
-	jump_to_char(ptr, '@');
-	ptr++;
-	src->host = ptr;
+    switch (*strpbrk(raw_msg_ptr, "@ ")) {
+	case '@':
+	    msg->src->user = strsep(&raw_msg_ptr, "@");
+	    msg->src->host = strsep(&raw_msg_ptr, " ");
+	    break;
+	case ' ':
+	    msg->src->user = strsep(&raw_msg_ptr, " ");
+	    break;
     }
-    jump_to_char(ptr, ' ');
-    *ptr = '\0';
+    return raw_msg_ptr;
 }
 
-void parse_command(char *command, char *ptr) {
-    command = ptr;
+char *parse_command(struct IRC_MSG *msg, char *raw_msg_ptr) { 
+    msg->command = strsep(&raw_msg_ptr, " ");
+    return raw_msg_ptr;
 }
 
-void parse_params(int *argc, char **argv, char *ptr) {
-    char *tmp = ptr;
-    int idx = 0;
+char *parse_params(struct IRC_MSG *msg, char *raw_msg_ptr) {
+    char **argv = (char **) calloc (MAX_PARAM_LIMIT, sizeof(char *));
     
-    while (*tmp != '\0' && *tmp != ':') {
-	if (*tmp == ' ')
-	    *argc += 1;
-	while (*tmp == ' ')
-	    tmp++;
-	tmp++;
-    };
+    while (*raw_msg_ptr != ':' && msg->argc < MAX_PARAM_LIMIT) {
+	argv[msg->argc] = strsep(&raw_msg_ptr, " ");
+	msg->argc += 1;
+    }
+    msg->argv = argv;
     
-   argv = (char **) calloc (*argc, sizeof(char *));
-   
-   for (; *argc > 0 && idx < *argc; idx++) {
-       argv[idx] = ptr;
-       jump_to_char(ptr, ' ');
-       *ptr = '\0';
-       ptr++;
-   }
+    return raw_msg_ptr;
 }
 
-void parse_text(char *text, char *ptr) {
-  text = ptr;
+char *parse_text(struct IRC_MSG *msg, char *raw_msg_ptr) {
+    msg->text = strsep(&raw_msg_ptr, "\r\n");
+    return raw_msg_ptr;
 }
 
 // void parse_msg(struct IRC_MSG *msg) {   
@@ -181,16 +165,18 @@ void parse_text(char *text, char *ptr) {
 // 	msg->message = raw_msg_ptr;
 // }
 
-void parse_read_buffer(struct IRC_CTX *ctx, char *read_buf, size_t *remainder) {
+void parse_read_buffer(struct IRC_CTX *ctx, char *read_buf, size_t *remainder_size) {
 	char *msg_end_ptr = NULL;
 	char *read_buf_ptr = read_buf;
 	size_t msg_len = 0;
 	
 	while ((msg_end_ptr = strstr(read_buf, IRC_MSG_TERMINATOR)) != NULL) {
-		msg_len = (msg_end_ptr + sizeof(IRC_MSG_TERMINATOR)) - read_buf;
+		msg_len = (msg_end_ptr + sizeof(IRC_MSG_TERMINATOR)) - read_buf; 
 		ctx->msg = create_message(read_buf, msg_len);
-		read_buf += msg_len;
+		 /* We subtract 1 because msg_len is the total length, and 
+		  * indexes are 0-based */
+		read_buf += (msg_len - 1); 
 	}
-	*remainder = strlen(read_buf);
-	memmove(read_buf_ptr, read_buf, *remainder);
+	*remainder_size = strlen(read_buf);
+	memmove(read_buf_ptr, read_buf, *remainder_size);
 }
