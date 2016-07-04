@@ -18,10 +18,10 @@ void nullify_chars(char *string_ptr, char c) {
 }
 
 void debug_print_msg(struct IRC_MSG *msg) {
-    printf("IRC_MSG {\n\t%s: %s,\n\t%s: %lu,\n\t", 
+    printf("IRC_MSG: {\n\t%s: %s,\n\t%s: %lu,\n\t", 
 	   "_raw", msg->_raw, 
 	   "_raw_len", msg->_raw_len);
-    printf("IRC_SRC {\n\t\t%s: %s,\n\t\t%s: %s,\n\t\t%s: %s,\n\t\t%s: %s\n\t},\n\t",
+    printf("IRC_SRC: {\n\t\t%s: %s,\n\t\t%s: %s,\n\t\t%s: %s,\n\t\t%s: %s\n\t},\n\t",
 	   "server_name", msg->src->server_name,
 	   "nick", msg->src->nick,
 	   "user", msg->src->user,
@@ -70,5 +70,13 @@ void sigint_handler(int signo) {
 
 void sigpipe_handler(int signo) {
     error("sigpipe");
+}
+
+void error(char *msg) {
+  printf(msg);
+}
+
+void success(char *msg) {
+  printf(msg);
 }
 
