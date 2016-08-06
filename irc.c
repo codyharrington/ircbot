@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "bot.h"
-#include "io.h"
-#include "utils.h"
-#include "irc.h"
+#include "include/bot.h"
+#include "include/io.h"
+#include "include/utils.h"
+#include "include/irc.h"
 
 struct IRC_MSG *init_msg()  {
     struct IRC_MSG *msg = (struct IRC_MSG *) calloc(1, sizeof(struct IRC_MSG));
@@ -48,10 +48,12 @@ struct IRC_MSG *create_message(char *raw, size_t raw_len) {
     if (delim_match != NULL && *delim_match == ':') {
 	raw_msg_ptr = parse_src(msg, ++raw_msg_ptr);
     }
-    
+
+    /* According to the IRC spec, command is the only mandatory
+     * section */
     delim_match = strpbrk(raw_msg_ptr, " :");
     if (delim_match != NULL && *delim_match == ' ') {
-	raw_msg_ptr = parse_command(msg, raw_msg_ptr);
+        msg->command = strsep(&raw_msg_ptr, " ");
     }
     delim_match = strpbrk(raw_msg_ptr, " :");
     if (delim_match != NULL && *delim_match == ' ') {
@@ -123,47 +125,6 @@ char *parse_text(struct IRC_MSG *msg, char *raw_msg_ptr) {
     msg->text = strsep(&raw_msg_ptr, "\r\n");
     return raw_msg_ptr;
 }
-
-// void parse_msg(struct IRC_MSG *msg) {   
-// 	char *raw_msg_ptr = msg->_raw;
-// 	char *tmp = NULL;
-// 	size_t n_args = 0;
-// 	size_t i = 0;
-// 	
-// 	nullify_spaces(raw_msg_ptr);
-// 	if (*raw_msg_ptr == ':') {
-// 		tmp = raw_msg_ptr + 1;
-// 		jump_to_space(raw_msg_ptr);
-// 		nullify_spaces(raw_msg_ptr);
-// 		msg->src = parse_irc_msg_src(tmp);
-// 	}
-// 	msg->command = raw_msg_ptr;
-// 	
-// 	jump_to_space(raw_msg_ptr);
-// 	nullify_spaces(raw_msg_ptr);
-// 	
-// 	tmp = raw_msg_ptr;
-// 	while (*raw_msg_ptr && *raw_msg_ptr != ':') {
-// 		n_args++;
-// 		while (*raw_msg_ptr != ' ') {
-// 			if (*raw_msg_ptr == ':')
-// 				break;
-// 			raw_msg_ptr++;
-// 		}
-// 		nullify_spaces(raw_msg_ptr);
-// 	}
-// 	msg->argv = (char **) malloc(n_args * sizeof(char *));
-// 	while (*tmp != ':') {
-// 		msg->argv[i] = tmp;
-// 		i++;
-// 		while (*tmp)
-// 			tmp++;
-// 		while (!*tmp)
-// 			tmp++;
-// 	}
-// 	raw_msg_ptr++;
-// 	msg->message = raw_msg_ptr;
-// }
 
 void parse_read_buffer(struct IRC_CTX *ctx, char *read_buf, size_t *remainder_size) {
 	char *msg_end_ptr = NULL;

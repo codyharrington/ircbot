@@ -8,13 +8,9 @@
 	ptr++; 
 
 
-void nullify_chars(char *string_ptr, char c);
-
 void debug_print_msg(struct IRC_MSG *msg);
 
-void nullify_next_char_instance(char *string_ptr, char c);
-
-char *jump_to_next_section(char *string_ptr, char separator);
+void print_buf(char *buf, size_t len);
 
 void error(char *msg);
 

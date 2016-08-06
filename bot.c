@@ -6,10 +6,10 @@
 #include <unistd.h>
 #include <errno.h>
 #include <pthread.h>
-#include "bot.h"
-#include "utils.h"
-#include "irc.h"
-#include "io.h"
+#include "include/bot.h"
+#include "include/utils.h"
+#include "include/irc.h"
+#include "include/io.h"
 
 #define IRC_NICK "chchjesus_bot_two"
 #define IRC_SERVER "irc.rizon.net"

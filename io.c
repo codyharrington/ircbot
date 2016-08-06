@@ -4,10 +4,10 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <errno.h>
-#include "bot.h"
-#include "irc.h"
-#include "utils.h"
-#include "io.h"
+#include "include/bot.h"
+#include "include/irc.h"
+#include "include/utils.h"
+#include "include/io.h"
 
 
 
